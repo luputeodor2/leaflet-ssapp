@@ -31,18 +31,34 @@ export default class SettingsService {
 
   }
 
+  readSettingFromEnvironment(name, callback) {
+    require("opendsu").loadApi("config").getEnv(name, callback);
+  }
+
   initDefaultValues() {
-    Object.keys(DEFAULT_VALUES).forEach(prop => {
-      this.readSetting(prop, (err, result) => {
-        if (err) {
-          this.writeSetting(prop, DEFAULT_VALUES[prop], (err, record) => {
-            if (err) {
-              console.log("Error in settings service constructor. Could not insert record for: ", prop, DEFAULT_VALUES[prop]);
-            }
-          })
-        }
-      })
+    this.readSettingFromEnvironment("epiDomain", (err, res) => {
+      if (err) {
+        console.log("Unable to find key epiDomain in environment file.", err);
+        writeDefaultValues.call(this);
+        return;
+      }
+      DEFAULT_VALUES.networkName = res;
+      writeDefaultValues.call(this);
     })
+
+    function writeDefaultValues() {
+      Object.keys(DEFAULT_VALUES).forEach(prop => {
+        this.readSetting(prop, (err, result) => {
+          if (err) {
+            this.writeSetting(prop, DEFAULT_VALUES[prop], (err, record) => {
+              if (err) {
+                console.log("Error in settings service constructor. Could not insert record for: ", prop, DEFAULT_VALUES[prop]);
+              }
+            })
+          }
+        })
+      })
+    }
   }
 
   readSetting(property, callback) {
